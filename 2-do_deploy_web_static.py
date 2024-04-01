@@ -1,33 +1,30 @@
 #!/usr/bin/python3
 """
- generates a .tgz archive from the contents
-of the web_static folder
-and deploy it to web servers
+Fabric script based on the file 1-pack_web_static.py that distributes an
+archive to the web servers
 """
 
 from fabric.api import put, run, env
-import os.path
-
+from os.path import exists
 env.hosts = ['54.87.171.64', '52.3.255.208']
 
 
 def do_deploy(archive_path):
-        """
-        deploy archive to web servers
-    """
-    if os.path.exists(archive_path) is False:
+    """distributes an archive to the web servers"""
+    if exists(archive_path) is False:
         return False
-    arch_name = archive_path.split('/')[1]
-    arch_name_nex = arch_name.split(".")[0]
-    re_path = "/data/web_static/releases/" + arch_name_nex
-    up_path = '/tmp/' + arch_name
-    put(archive_path, up_path)
-    run('mkdir -p ' + re_path)
-    run('tar -xzf /tmp/{} -C {}/'.format(arch_name, re_path))
-    run('rm {}'.format(up_path))
-    mv = 'mv ' + re_path + '/web_static/* ' + re_path + '/'
-    run(mv)
-    run('rm -rf ' + re_path + '/web_static')
-    run('rm -rf /data/web_static/current')
-    run('ln -s ' + re_path + ' /data/web_static/current')
-    return True
+    try:
+        file_n = archive_path.split("/")[-1]
+        no_ext = file_n.split(".")[0]
+        path = "/data/web_static/releases/"
+        put(archive_path, '/tmp/')
+        run('mkdir -p {}{}/'.format(path, no_ext))
+        run('tar -xzf /tmp/{} -C {}{}/'.format(file_n, path, no_ext))
+        run('rm /tmp/{}'.format(file_n))
+        run('mv {0}{1}/web_static/* {0}{1}/'.format(path, no_ext))
+        run('rm -rf {}{}/web_static'.format(path, no_ext))
+        run('rm -rf /data/web_static/current')
+        run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
+        return True
+    except:
+        return False
